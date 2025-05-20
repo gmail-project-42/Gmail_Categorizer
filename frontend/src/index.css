@@ -1,0 +1,75 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Roboto', sans-serif;
+  color: #202124;
+  height: 100vh;
+  background: linear-gradient(135deg, #6C63FF 0%, #FF6584 100%);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: transparent;
+}
+
+.app__body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  height: calc(100vh - 64px);
+  background: transparent;
+}
+
+/* Sidebar Animation */
+.app__body > div:first-of-type {
+  transition: transform 0.3s ease, width 0.3s ease, opacity 0.2s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app__body {
+    position: relative;
+  }
+  
+  .app__body > div:first-of-type {
+    position: absolute;
+    z-index: 100;
+    height: 100%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    transform: translateX(0);
+  }
+  
+  .app__body > div:first-of-type.hidden {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app__body {
+    height: calc(100vh - 56px); /* Mobilde daha küçük header */
+  }
+  
+  .MuiTab-root {
+    min-width: auto !important;
+    padding: 6px 8px !important;
+  }
+  
+  .MuiTab-wrapper {
+    flex-direction: column !important;
+  }
+}
+
+/* Kart ve sidebar için modern gölge */
+.sidebar, .email-list, .email-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(108,99,255,0.07);
+}
