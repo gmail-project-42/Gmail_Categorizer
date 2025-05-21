@@ -24,6 +24,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ReplyIcon from '@mui/icons-material/Reply';
 import ForwardIcon from '@mui/icons-material/Forward';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import DOMPurify from 'dompurify';
 
 interface EmailRowProps {
   id: string;
@@ -358,34 +359,18 @@ const EmailRow: React.FC<EmailRowProps> = ({
           
           {/* E-posta içeriği */}
           <Box sx={{ p: 2, pl: 8 }}>
-            <Typography variant="body1" sx={{ 
-              whiteSpace: 'pre-line',
-              fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-              fontSize: '14px',
-              lineHeight: 1.6
-            }}>
-              {content ? content : `Merhaba,
-              
-              ${originalSubject && originalSubject.includes("Etik Kurul") ? `
-              Bu e-posta, Etik Kurul başvurunuzla ilgili bilgilendirme amacıyla gönderilmiştir.
-              
-              Başvurunuz alınmış olup, 10 iş günü içerisinde değerlendirilecektir. Değerlendirme sürecinde ek bilgi ya da belge talep edilebilir.
-              
-              Herhangi bir sorunuz olması durumunda lütfen iletişime geçmekten çekinmeyin.
-              
-              Saygılarımla,
-              Cem BAYDOĞAN` : 
-              `              
-              Bu örnek bir e-posta içeriğidir.
-              
-              Gmail arayüzü klonumuzu test etmek için oluşturulmuştur.
-              
-              Saygılarımla,
-              ${senderInfo.name}`}`}
-            </Typography>
-          
+            <div
+              style={{
+                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+                fontSize: '14px',
+                lineHeight: 1.6,
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+              }}
+              dangerouslySetInnerHTML={{ __html: content ? DOMPurify.sanitize(content) : '' }}
+            />
             {/* Ekler */}
-          {attachment && (
+            {attachment && (
               <Box sx={{ 
                 mt: 3, 
                 p: 1, 
@@ -401,7 +386,7 @@ const EmailRow: React.FC<EmailRowProps> = ({
                   {attachment}
                 </Typography>
             </Box>
-          )}
+            )}
           </Box>
         </DialogContent>
         
