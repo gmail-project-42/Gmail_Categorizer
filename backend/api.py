@@ -9,7 +9,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 import logging
-from categorize_mails import categorizer_mails, today
+from categorize_mails import categorizer_mails
 
 from send_mail import *
 from take_mails import * 

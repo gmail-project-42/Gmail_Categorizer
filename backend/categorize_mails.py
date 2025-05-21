@@ -1,28 +1,28 @@
-from take_mails import return_mails_and_service
+from take_mails import take_daily_mails
 from mail_classifier import MailClassifier
 from pymongo import MongoClient
 import os
 
-today = None
 categorized_mails = []
 
-# Collection değişkeni dışarıdan (api.py'den) atanacak
 collection = None
 
 def categorizer_mails():
     classifier = MailClassifier()
     global categorized_mails 
-    global today
-    categorized_mails = []  # Listeyi her seferinde temizle
-    list_of_daily_mails, service, snippet, today = return_mails_and_service()
+    categorized_mails = []
+    list_of_daily_mails, snippet = take_daily_mails()
     
-    for i, item in enumerate(list_of_daily_mails):
-        result = classifier.classify_mail(item['body'])
+    for item in list_of_daily_mails:
+        # İçerik kontrolü - text alanını kaldırıyoruz
+        content_to_classify = item.get('content', '') or item.get('body', '') or item.get('snippet', '')
+        
+        result = classifier.classify_mail(content_to_classify)
         mail_data = {
             "id": item['id'],
-            "text": item['text'],
-            "body": item['body'],
-            "snippet": item['snippet'],
+            "content": item.get('content', ''),
+            "body": item.get('content', ''),  # Eski uyumluluk için
+            "snippet": item.get('snippet', ''),
             "date": item['date'].strftime("%Y-%m-%d"),
             "predicted_class": result['predicted_class'],
             "confidence_score": result['confidence_score'],

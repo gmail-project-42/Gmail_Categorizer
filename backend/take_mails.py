@@ -14,12 +14,14 @@ SCOPES = [
     'https://www.googleapis.com/auth/gmail.send'
 ]
 
+
+
 list_of_daily_mails = []
 list_of_snippets = []
 
 
+
 def authenticate_gmail():
-    
     creds = None
     token_file = f'token.json'
     if os.path.exists(token_file):
@@ -42,18 +44,115 @@ def authenticate_gmail():
 
 
 
-def get_text_from_payload(payload):
-    if 'parts' in payload:
-        for part in payload['parts']:
-            if part['mimeType'] == 'text/plain':
-                data = part['body']['data']
-                return base64.urlsafe_b64decode(data).decode('utf-8')
-    elif payload['mimeType'] == 'text/plain':
-        data = payload['body']['data']
-        return base64.urlsafe_b64decode(data).decode('utf-8')
-    return None
 
+def test():
+    global list_of_daily_mails
+    global list_of_snippets
 
+    list_of_daily_mails = []
+    list_of_snippets = []     
+
+    service = authenticate_gmail()
+
+    today = datetime.now()
+    week_ago = today - timedelta(days=7)
+    week_ago_utc = week_ago.astimezone(timezone.utc)
+    after_ts = int(week_ago_utc.timestamp())
+
+    query = f'after:{after_ts}'
+
+    results = service.users().messages().list(userId='me', q=query, maxResults=100).execute()
+    mails = results.get('messages', [])
+    
+    for mail in mails:
+        msg_id = mail['id']
+        mail_data = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+        payload = mail_data.get('payload', {})
+        
+        # Başlıkları al
+        headers = payload.get('headers', [])
+        subject = next((h['value'] for h in headers if h['name'].lower() == 'subject'), 'Konu yok')
+        sender = next((h['value'] for h in headers if h['name'].lower() == 'from'), 'Bilinmeyen Gönderici')
+        
+        print(f"\nE-posta ID: {msg_id}")
+        print(f"Konu: {subject}")
+        print(f"Gönderen: {sender}")
+        
+        def get_content_from_parts(parts):
+            html_content = None
+            plain_content = None
+            
+            for part in parts:
+                mime_type = part.get('mimeType', '')
+                
+                # Multipart içerik kontrolü
+                if mime_type.startswith('multipart/'):
+                    sub_parts = part.get('parts', [])
+                    sub_content = get_content_from_parts(sub_parts)
+                    if sub_content:
+                        if isinstance(sub_content, tuple):
+                            html_content = html_content or sub_content[0]
+                            plain_content = plain_content or sub_content[1]
+                        else:
+                            html_content = html_content or sub_content
+                
+                # HTML içerik kontrolü
+                elif mime_type == 'text/html':
+                    data = part.get('body', {}).get('data')
+                    if data:
+                        try:
+                            content = base64.urlsafe_b64decode(data).decode('utf-8')
+                            html_content = content
+                        except Exception as e:
+                            print(f"HTML decode hatası: {str(e)}")
+                
+                # Düz metin kontrolü
+                elif mime_type == 'text/plain':
+                    data = part.get('body', {}).get('data')
+                    if data:
+                        try:
+                            content = base64.urlsafe_b64decode(data).decode('utf-8')
+                            plain_content = content
+                        except Exception as e:
+                            print(f"Text decode hatası: {str(e)}")
+            
+            # Eğer hem HTML hem düz metin varsa, ikisini de döndür
+            if html_content and plain_content:
+                return (html_content, plain_content)
+            # Sadece HTML varsa
+            elif html_content:
+                return html_content
+            # Sadece düz metin varsa
+            elif plain_content:
+                return plain_content
+            
+            return None
+        
+        # İçeriği al
+        content = get_content_from_parts(payload.get('parts', []))
+        
+        if content:
+            if isinstance(content, tuple):
+                html_content, plain_content = content
+                print("\nHTML İçerik:")
+                print(html_content)
+                print("\nDüz Metin İçerik:")
+                print(plain_content)
+            else:
+                print("\nİçerik:")
+                print(content)
+        else:
+            # Eğer parts yoksa, doğrudan body'den içeriği al
+            body_data = payload.get('body', {}).get('data')
+            if body_data:
+                try:
+                    content = base64.urlsafe_b64decode(body_data).decode('utf-8')
+                    print("\nİçerik (Body):")
+                    print(content)
+                except Exception as e:
+                    print(f"Body decode hatası: {str(e)}")
+        
+        print("-" * 80)
 
 
 def strip_html_tags(html):
@@ -91,103 +190,82 @@ def strip_html_tags(html):
 def get_body_from_payload(payload):
     """
     Mesajın payload bilgisinden mail içeriğini recursive olarak çıkarır.
-    
-    Öncelikle text/plain içeriğini arar, bulamazsa text/html içeriğini temizleyerek kullanır.
-    İç içe multipart yapılar için recursive olarak arama yapar.
+    HTML içeriğini korur ve düzgün şekilde işler.
     """
     if not payload:
         return "İçerik alınamadı."
     
-    def extract_text_from_part(part, depth=0, max_depth=10):
-        if depth > max_depth:  # Sonsuz döngüye girmemek için derinlik kontrolü
+    def extract_content_from_part(part, depth=0, max_depth=10):
+        if depth > max_depth:
             return None
             
         mime_type = part.get('mimeType', '')
         
-        # Eğer MIME tipi multipart ise alt parçalara git
+        # Multipart içerik kontrolü
         if mime_type.startswith('multipart/'):
             parts = part.get('parts', [])
+            html_content = None
             plain_text = None
-            html_text = None
             
-            # Önce düz metin ara
             for sub_part in parts:
-                text = extract_text_from_part(sub_part, depth + 1)
+                content = extract_content_from_part(sub_part, depth + 1)
                 sub_mime = sub_part.get('mimeType', '')
-                if text:
-                    if sub_mime == 'text/plain':
-                        plain_text = text
-                    elif sub_mime == 'text/html' and not html_text:
-                        html_text = text
+                if content:
+                    if sub_mime == 'text/html':
+                        html_content = content
+                    elif sub_mime == 'text/plain' and not plain_text:
+                        plain_text = content
             
-            # Düz metin varsa onu, yoksa HTML'i kullan
-            return plain_text or html_text
+            return html_content or plain_text
             
+        # HTML içerik kontrolü
+        elif mime_type == 'text/html':
+            body_data = part.get('body', {}).get('data')
+            if body_data:
+                try:
+                    return base64.urlsafe_b64decode(body_data).decode('utf-8')
+                except Exception as e:
+                    print(f"HTML decode hatası: {str(e)}")
+                    return None
+                    
+        # Düz metin kontrolü
         elif mime_type == 'text/plain':
             body_data = part.get('body', {}).get('data')
             if body_data:
                 try:
                     return base64.urlsafe_b64decode(body_data).decode('utf-8')
                 except Exception as e:
-                    print(f"Decode hatası: {str(e)}")
-                    return "İçerik decode edilemedi."
-            return None
-            
-        elif mime_type == 'text/html':
-            body_data = part.get('body', {}).get('data')
-            if body_data:
-                try:
-                    html_content = base64.urlsafe_b64decode(body_data).decode('utf-8')
-                    return strip_html_tags(html_content)
-                except Exception as e:
-                    print(f"HTML decode hatası: {str(e)}")
-                    return "HTML içerik decode edilemedi."
-            return None
-            
-        # Alt parçalar varsa onları da kontrol et
+                    print(f"Text decode hatası: {str(e)}")
+                    return None
+        
+        # Alt parçaları kontrol et
         elif 'parts' in part:
             for sub_part in part.get('parts', []):
-                text = extract_text_from_part(sub_part, depth + 1)
-                if text:
-                    return text
+                content = extract_content_from_part(sub_part, depth + 1)
+                if content:
+                    return content
         
-        # Herhangi bir içerik bulunamadı
         return None
     
-    # Recursive fonksiyonu çağır
-    content = extract_text_from_part(payload)
-    
-    if content:
-        # Fazla boşlukları ve satır başlarını temizle 
-        content = re.sub(r'\n\s*\n', '\n\n', content)  # Ardışık boş satırları tek boş satıra indir
-        return content.strip()
-    else:
-        return "İçerik alınamadı."
+    content = extract_content_from_part(payload)
+    return content if content else "İçerik alınamadı."
 
 
-def take_daily_mails(service):
-    
+def take_daily_mails():
     global list_of_daily_mails
     global list_of_snippets
     
-    list_of_daily_mails = []  # Listeyi temizle
-    list_of_snippets = []     # Listeyi temizle
+    list_of_daily_mails = []
+    list_of_snippets = []
     
     service = authenticate_gmail()
     
     today = datetime.now()
-    # Son 7 günlük e-postaları almak için
     week_ago = today - timedelta(days=7)
-    
-    # Zaman dilimlerini UTC'ye çevir
     week_ago_utc = week_ago.astimezone(timezone.utc)
-    
-    # Timestamp değerlerini al
     after_ts = int(week_ago_utc.timestamp())
     
-    # Query'yi değiştir - sadece son X günün maillerini al
     query = f'after:{after_ts}'
-    print(f"Mail sorgusu: {query}")
     
     results = service.users().messages().list(userId='me', q=query, maxResults=100).execute()
     mails = results.get('messages', [])
@@ -197,13 +275,13 @@ def take_daily_mails(service):
     else:
         print(f"Son günlerin e-postaları: {len(mails)} adet")
         for mail in mails:
-            msg_id = mail['id']   
+            msg_id = mail['id']
             try:
-                mail = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
-                snippet = mail.get('snippet', '')
-                payload = mail.get('payload', {})
+                mail_data = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+                snippet = mail_data.get('snippet', '')
+                payload = mail_data.get('payload', {})
                 
-                # Yeni get_body_from_payload fonksiyonunu kullan, artık detaylı içerik alabiliyoruz
+                # İçeriği al
                 content = get_body_from_payload(payload)
                 
                 headers = payload.get('headers', [])
@@ -219,7 +297,7 @@ def take_daily_mails(service):
                         subject = header.get('value', 'Konu yok')
                     elif name == 'date':
                         date_str = header.get('value', '')
-                        
+                
                 received_date = today
                 if date_str:
                     try:
@@ -227,33 +305,26 @@ def take_daily_mails(service):
                         received_date = parsedate_to_datetime(date_str)
                     except Exception as e:
                         print(f"Tarih ayrıştırma hatası: {str(e)}")
-                        
-                # Mail nesnesini oluştur
-                mail_data = {
+                
+                mail_info = {
                     'id': msg_id,
-                    'content': content,  # Artık content adı altında içerik ekleniyor
+                    'content': content,  # HTML içeriği
                     'snippet': snippet,
                     'date': received_date,
                     'sender': sender,
-                    'subject': subject if subject and subject != 'Konu yok' else snippet
+                    'subject': subject if subject and subject != 'Konu yok' else snippet,
+                    'body': content  # Eski uyumluluk için body alanını da ekle
                 }
                 
                 list_of_snippets.append(snippet)
-                list_of_daily_mails.append(mail_data)
+                list_of_daily_mails.append(mail_info)
+                
             except Exception as e:
                 print(f"Mail {msg_id} alınırken hata: {str(e)}")
-            
-    return list_of_daily_mails, list_of_snippets, today
-
-
-
-def return_mails_and_service():
-    service = authenticate_gmail()
-    list_of_daily_mails, list_of_snippets, today = take_daily_mails(service)
-    return list_of_daily_mails, service, list_of_snippets, today
+    
+    return list_of_daily_mails, list_of_snippets
 
 
 
 if __name__ == "__main__":
-    list_of_daily_mails, service, list_of_snippets, today = return_mails_and_service()
-    print(today)
+    test()
