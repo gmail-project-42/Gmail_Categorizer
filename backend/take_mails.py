@@ -151,39 +151,6 @@ def test():
                     print(content)
                 except Exception as e:
                     print(f"Body decode hatası: {str(e)}")
-        
-        print("-" * 80)
-
-
-def strip_html_tags(html):
-    """
-    HTML etiketlerini temizler ve düz metin döndürür.
-    """
-    if not html:
-        return ""
-        
-    # JavaScript kodlarını tamamen kaldır
-    html = re.sub(r'<script\b[^>]*>.*?</script>', '', html, flags=re.DOTALL)
-    
-    # CSS kodlarını kaldır
-    html = re.sub(r'<style\b[^>]*>.*?</style>', '', html, flags=re.DOTALL)
-    
-    # HTML yorumlarını kaldır
-    html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)
-    
-    # Diğer tüm HTML etiketlerini kaldır
-    html = re.sub(r'<[^>]+>', ' ', html)
-    
-    # Yeni satırları koru
-    html = html.replace('&nbsp;', ' ')
-    html = html.replace('&amp;', '&')
-    html = html.replace('&lt;', '<')
-    html = html.replace('&gt;', '>')
-    
-    # Ardışık boşlukları tek boşluğa indir
-    html = re.sub(r'\s+', ' ', html)
-    
-    return html.strip()
 
 
 

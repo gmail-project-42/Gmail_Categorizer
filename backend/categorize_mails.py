@@ -2,13 +2,17 @@ from take_mails import take_daily_mails
 from mail_classifier import MailClassifier
 from pymongo import MongoClient
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+hf_token = os.getenv("HF_TOKEN")
 
 categorized_mails = []
 
 collection = None
 
 def categorizer_mails():
-    classifier = MailClassifier()
+    classifier = MailClassifier(hf_token)
     global categorized_mails 
     categorized_mails = []
     list_of_daily_mails, snippet = take_daily_mails()

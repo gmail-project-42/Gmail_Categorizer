@@ -14,6 +14,10 @@ from categorize_mails import categorizer_mails
 from send_mail import *
 from take_mails import * 
 
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
 logging.basicConfig(level=logging.INFO, 
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -27,7 +31,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://frontend-service-116708036805.europe-west1.run.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,10 +91,24 @@ except Exception as e:
 @app.post("/mails/connect_mail")
 def connect_mail(request: ConnectMailRequest):
     global profile
-    service = authenticate_gmail()
+    auth_url = authenticate_gmail()
+    if isinstance(auth_url, str):
+        return {"auth_url": auth_url}
+    service = auth_url
     profile = service.users().getProfile(userId='me').execute()
     return profile
-        
+
+@app.post("/mails/complete_auth")
+def complete_auth(code: str):
+    global profile
+    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+    flow.fetch_token(code=code)
+    creds = flow.credentials
+    with open('token.json', 'w') as token:
+        token.write(creds.to_json())
+    service = build('gmail', 'v1', credentials=creds)
+    profile = service.users().getProfile(userId='me').execute()
+    return profile
 
 
 
@@ -228,4 +246,4 @@ async def delete_selected_mails(request: DeleteMailsRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True )
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True )

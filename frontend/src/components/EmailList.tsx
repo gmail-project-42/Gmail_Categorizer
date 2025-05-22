@@ -106,7 +106,7 @@ const EmailList: React.FC<EmailListProps> = ({ selectedCategory, searchQuery = '
     setError(null);
     try {
       const response = await fetch(
-        `http://localhost:8000/mails/${selectedCategory}`
+        `https://backend-service-116708036805.europe-west1.run.app/mails/${selectedCategory}`
       );
       
       if (!response.ok) {
@@ -175,7 +175,7 @@ const EmailList: React.FC<EmailListProps> = ({ selectedCategory, searchQuery = '
       await fetchMails();
       
       // Sonra yeni mailleri veritabanına ekle
-      const importResponse = await fetch('http://localhost:8000/mails/insert_mails_into_database', {
+      const importResponse = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/insert_mails_into_database', {
         method: 'POST',
       });
       
@@ -230,7 +230,7 @@ const EmailList: React.FC<EmailListProps> = ({ selectedCategory, searchQuery = '
   const handleDelete = async () => {
     if (selected.length === 0) return;
     try {
-      const response = await fetch('http://localhost:8000/mails/delete-selected', {
+      const response = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/delete-selected', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mail_ids: selected }),
@@ -274,7 +274,7 @@ const EmailList: React.FC<EmailListProps> = ({ selectedCategory, searchQuery = '
     
     try {
       // Mailleri arşivle (silmek yerine)
-      const response = await fetch('http://localhost:8000/mails/archive-selected', {
+      const response = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/archive-selected', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mail_ids: selected }),

@@ -1,12 +1,12 @@
-from transformers import pipeline
+import requests
+import os
+from dotenv import load_dotenv
 
 
 class MailClassifier:
-    def __init__(self):
-        self.classifier = pipeline("zero-shot-classification",
-                                 model="facebook/bart-large-mnli",
-                                 device=0)
-        
+    def __init__(self, hf_token):
+        self.api_url = "https://api-inference.huggingface.co/models/facebook/bart-large-mnli"
+        self.headers = {"Authorization": f"Bearer {hf_token}"}
         self.labels = [
             "Pazarlama ve Reklam (Tanıtımlar)",
             "Sosyal",
@@ -19,9 +19,15 @@ class MailClassifier:
         
     
     def classify_mail(self, mail_content):
-        result = self.classifier(mail_content, 
-                               candidate_labels=self.labels,
-                               multi_label=False)
+        payload = {
+            "inputs": mail_content,
+            "parameters": {
+                "candidate_labels": self.labels,
+                "multi_label": False
+            }
+        }
+        response = requests.post(self.api_url, headers=self.headers, json=payload)
+        result = response.json()
         predicted_class = result['labels'][0]
         confidence_score = result['scores'][0]
         

@@ -67,7 +67,7 @@ function App() {
     setIsConnecting(true);
     try {
       // 1. Gmail bağlantısı
-      const response = await fetch('http://localhost:8000/mails/connect_mail', {
+      const response = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/connect_mail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_email: user?.email }),
@@ -80,7 +80,7 @@ function App() {
         
         // 2. Mailleri MongoDB'ye aktar
         try {
-          const importResponse = await fetch('http://localhost:8000/mails/insert_mails_into_database', {
+          const importResponse = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/insert_mails_into_database', {
             method: 'POST',
           });
           
@@ -201,9 +201,9 @@ function App() {
               <MenuIcon />
             </IconButton>
             <img 
-              src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/logo_gmail_lockup_default_1x_r5.png" 
-              alt="Gmail" 
-              height="40px"
+              src="/logo192.png"
+              alt="Mail Categorizer Logo"
+              height="96px"
             />
           </Box>
           {/* Orta: Arama Çubuğu */}

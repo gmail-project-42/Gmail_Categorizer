@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     build: ./backend
-    container_name: gmail_backend
+    container_name: kahramann/gmail_backend
     ports:
       - "8000:8000"
     restart: always
@@ -12,7 +12,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: gmail_frontend
+    container_name: kahramann/gmail_frontend
     ports:
       - "3000:3000"
     restart: always

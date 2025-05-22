@@ -66,7 +66,7 @@ const ComposeModal: React.FC<ComposeModalProps> = ({ open, onClose, user }) => {
         queryParams.append('from', user.email);
       }
       
-      const response = await fetch(`http://localhost:8000/mails/send_mail?${queryParams.toString()}`, {
+      const response = await fetch(`https://backend-service-116708036805.europe-west1.run.app/mails/send_mail?${queryParams.toString()}`, {
         method: 'POST',
       });
 

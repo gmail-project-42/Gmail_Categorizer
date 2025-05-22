@@ -361,8 +361,8 @@ const EmailRow: React.FC<EmailRowProps> = ({
           <Box sx={{ p: 2, pl: 8 }}>
             <div
               style={{
-                fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-                fontSize: '14px',
+              fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+              fontSize: '14px',
                 lineHeight: 1.6,
                 whiteSpace: 'normal',
                 wordBreak: 'break-word',
@@ -370,7 +370,7 @@ const EmailRow: React.FC<EmailRowProps> = ({
               dangerouslySetInnerHTML={{ __html: content ? DOMPurify.sanitize(content) : '' }}
             />
             {/* Ekler */}
-            {attachment && (
+          {attachment && (
               <Box sx={{ 
                 mt: 3, 
                 p: 1, 
@@ -386,7 +386,7 @@ const EmailRow: React.FC<EmailRowProps> = ({
                   {attachment}
                 </Typography>
             </Box>
-            )}
+          )}
           </Box>
         </DialogContent>
         

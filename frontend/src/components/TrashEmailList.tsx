@@ -53,7 +53,7 @@ const TrashEmailList: React.FC<TrashEmailListProps> = ({ searchQuery = '' }) => 
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:8000/mails/trash');
+      const response = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/trash');
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -152,7 +152,7 @@ const TrashEmailList: React.FC<TrashEmailListProps> = ({ searchQuery = '' }) => 
   const handlePermanentDelete = async () => {
     if (selected.length === 0) return;
     try {
-      const response = await fetch('http://localhost:8000/mails/permanently-delete', {
+      const response = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/permanently-delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mail_ids: selected }),
@@ -195,7 +195,7 @@ const TrashEmailList: React.FC<TrashEmailListProps> = ({ searchQuery = '' }) => 
   const handleRestore = async () => {
     if (selected.length === 0) return;
     try {
-      const response = await fetch('http://localhost:8000/mails/restore-from-trash', {
+      const response = await fetch('https://backend-service-116708036805.europe-west1.run.app/mails/restore-from-trash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mail_ids: selected }),
